@@ -72,16 +72,7 @@ defmodule Day02 do
     identicalFragments = Enum.uniq(list)
       |> Enum.count()
 
-      if id === 111 do
-        IO.inspect("id: #{id}")
-        IO.inspect("list:")
-        IO.inspect(list)
-        IO.inspect("stringLength: #{stringLength}")
-        IO.inspect("divisor: #{divisor}")
-        IO.inspect("###")
-      end
-
-      identicalFragments === 1
+    identicalFragments === 1
   end
 
   def filter_for_invalid_gold_ids(id) do
@@ -90,22 +81,46 @@ defmodule Day02 do
 
     case stringLength do
       1 -> nil
-      _ -> find_invalid_gold(id, Multitool.Numbers.Factors.factors_of(stringLength))
+      _ -> find_invalid_gold(id, stringLength)
     end
   end
 
-  def find_invalid_gold(id, factors) do
-    result = Enum.reduce(
-      factors,
-      false,
-      fn divisor, acc -> acc || is_invalid_silver(id, Integer.to_string(id) |> String.length(), divisor) end
-    )
+  def find_invalid_gold(id, stringLength) do
+    fragments = Multitool.Numbers.Factors.factors_of(stringLength)
+      |> Enum.map(fn factor -> get_index_to_cut(stringLength, factor) end)
+      |> Enum.map(fn index -> cut_stringed_id_into_fragments(Integer.to_string(id), index) end)
+      |> Enum.filter(fn fragments -> is_list(fragments) end)
+
+    isInvalid = Enum.reduce(fragments, false, fn fragments, acc -> acc || is_invalid_fragement(fragments) end)
 
     # IO.inspect(id)
-    # IO.inspect(factors)
-    # IO.inspect(result)
+    # IO.inspect(fragments)
+    # IO.inspect(isInvalid)
     # IO.inspect("- - - - -")
 
-    result
+    isInvalid
+  end
+
+  def get_index_to_cut(stringLength, factor) do
+    div(stringLength, factor)
+  end
+
+  def cut_stringed_id_into_fragments(string, index) do
+      [head | tail] = String.split_at(string, index)
+        |> Tuple.to_list()
+
+      rest = Enum.at(tail, 0)
+
+      case String.length(rest) do
+        0 -> head
+        _ -> List.flatten([head, cut_stringed_id_into_fragments(rest, index)])
+      end
+  end
+
+  def is_invalid_fragement(fragments) do
+    case is_list(fragments) do
+      false -> false
+      true -> (Enum.uniq(fragments) |> Enum.count()) === 1
+    end
   end
 end
